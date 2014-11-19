@@ -14,7 +14,7 @@ void mat_prod_ijk(int **a, int **b, int **c, int n, int o[3])
 }
 
 void mat_prod_block_test(int **a, int **b, int **c, int n, int o[3], int sb)
-{
+{	
 	int ib, jb,i,j,k,kb, m;
 	m = n / sb;
 	for (ib=1; ib <= sb; ib++)
@@ -45,13 +45,25 @@ void mat_prod_block_test_2(int **a, int **b, int **c, int n, int o[3], int sb)
 	return;
 }
 
+void mat_prod_4d(int ****a, int ****b, int ****c, int n_blocks, int block_size)
+{
+	int i, j, ib, jb, k;
+	int o[3] = { 0, 2, 1 };
+	
+	
+	for (ib = 0; ib < n_blocks; ib++)
+	for (k = 0; k < n_blocks; k++)
+	for (jb = 0; jb < n_blocks; jb++)
+	mat_prod_ijk(a[ib][k], b[k][jb], c[ib][jb], block_size, o);
+}
+
 void mat_clean(int **c, int n)
 {
 	for (int i = 0; i < n; i++)
 	for (int j = 0; j < n; j++)
 		c[i][j] = 0;
 }
-void mat_print(int **a, int n)
+void mat_print_2d(int **a, int n)
 {
 	for (int i = 0; i < n; i++)
 	{
@@ -61,32 +73,75 @@ void mat_print(int **a, int n)
 	}
 }
 
+void mat_print_4d(int ****a, int n_blocks, int block_size)
+{
+	for (int ib = 0; ib < n_blocks; ib++)
+	{
+		for (int i = 0; i < block_size; i++)
+		{
+			for (int jb = 0; jb < n_blocks; jb++)
+			{
+				for (int j = 0; j < block_size; j++)
+				{
+					cout << a[ib][jb][i][j] << " ";
+				}
+			}
+			cout << endl;
+		}
+	}
+}
+
 
 int main()
 {
 	srand(time(NULL));
-	int n,i,j,k, block_size;
+	int n,i,j,k,l, block_size;
 	cin >> n >> block_size;
 	int **a, **b, **c;
-	int order[3];
+	int ****a_bl, ****b_bl, ****c_bl;
+	int n_blocks = n / block_size;
+	int order[3] = { 0, 2, 1 };
 	a = new int*[n];
 	b = new int*[n];
 	c = new int*[n];
+	a_bl = new int***[n_blocks];
+	b_bl = new int***[n_blocks];
+	c_bl = new int***[n_blocks];
 	for (i = 0; i < n; i++)
 	{
 		a[i] = new int[n];
 		b[i] = new int[n];
 		c[i] = new int[n];
 	}
-	for (i = 0; i < n; i++)
+
+	for (i = 0; i < n_blocks; i++)
 	{
-		for (j = 0; j < n; j++)
+		a_bl[i] = new int**[n_blocks];
+		b_bl[i] = new int**[n_blocks];
+		c_bl[i] = new int**[n_blocks];
+		for (j = 0; j < n_blocks; j++)
 		{
-			a[i][j] = rand() % 100 - 10;
-			b[i][j] = rand() % 100 - 10;
-			c[i][j] = 0;
+			a_bl[i][j] = new int*[block_size];
+			b_bl[i][j] = new int*[block_size];
+			c_bl[i][j] = new int*[block_size];
+			for (k = 0; k < block_size; k++)
+			{
+				a_bl[i][j][k] = new int[block_size];
+				b_bl[i][j][k] = new int[block_size];
+				c_bl[i][j][k] = new int[block_size];
+				for (l = 0; l < block_size; l++)
+				{
+					a_bl[i][j][k][l] = rand() % 100 - 10;
+					b_bl[i][j][k][l] = rand() % 100 - 10;
+					c_bl[i][j][k][l] = 0;
+					a[i*block_size + k][j*block_size + l] = a_bl[i][j][k][l];
+					b[i*block_size + k][j*block_size + l] = b_bl[i][j][k][l];
+					c[i*block_size + k][j*block_size + l] = 0;
+				}
+			}
 		}
 	}
+
 	/*
 	for (order[0] = 0; order[0] < 3; order[0]++)
 		for (order[1] = 0; order[1] < 3; order[1]++)
@@ -102,22 +157,43 @@ int main()
 				}
 	        }
 			*/
-	order[0]=0; order[1]=1; order[2]=2;
+	//
 	clock_t begin_time = clock();
-	mat_prod_block_test(a,b,c,n,order, block_size);
-	cout << order[0] << " " << order[1] << " " << order[2] << ": ";
+	mat_prod_4d(a_bl, b_bl, c_bl, n_blocks, block_size);
 	cout << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
-	mat_clean(c,n);
+	cout << "prod 4d" << endl;
+	//mat_print_4d(c_bl, n_blocks, block_size);
 
 	begin_time = clock();
-	mat_prod_block_test_2(a,b,c,n,order, block_size);
-	cout << order[0] << " " << order[1] << " " << order[2] << ": ";
+	mat_prod_ijk(a, b, c, n, order);
 	cout << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
-	mat_clean(c,n);
+	cout << "prod 2d" << endl;
 
 
 	
 
+
+	for (i = 0; i < n_blocks; i++)
+	{
+		for (j = 0; j < n_blocks; j++)
+		{
+			for (k = 0; k < block_size; k++)
+			{
+				delete [] a_bl[i][j][k];
+				delete [] b_bl[i][j][k];
+				delete [] c_bl[i][j][k];
+			}
+			delete[] a_bl[i][j];
+			delete[] b_bl[i][j];
+			delete[] c_bl[i][j];
+		}
+		delete[] a_bl[i];
+		delete[] b_bl[i];
+		delete[] c_bl[i];
+	}
+	delete[] a_bl;
+	delete[] b_bl;
+	delete[] c_bl;
 
     for (i = 0; i < n; i++)
 	{
