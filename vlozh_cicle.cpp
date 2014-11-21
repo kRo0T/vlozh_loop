@@ -30,25 +30,22 @@ void mat_prod_block_test(int **a, int **b, int **c, int n, int o[3], int sb)
 
 void mat_prod_block_test_2(int **a, int **b, int **c, int n, int o[3], int sb)
 {
-	int ib, jb,i,j,k,kb, m;
+	int ib, jb,i,j,k,kb, m, ind[3];
 	m = n / sb;
 	for (ib=1; ib <= sb; ib++)
 		for (jb=1; jb <= sb; jb++)
 			for (kb=1; kb <= sb; kb++)
-		for (i=(ib-1)*m; i < ib*m; i++)
-			
-				
-					
-						for (k=(kb-1)*m; k < kb*m; k++)
-							for (j=(jb-1)*m; j < jb*m; j++)
-							c[i][j] = c[i][j] + a[i][k]*b[k][j];
+		        for (ind[o[0]]=(ib-1)*m; ind[o[0]] < ib*m; ind[o[0]]++)
+			    	for (ind[o[1]]=(kb-1)*m; ind[o[1]] < kb*m; ind[o[1]]++)
+						for (ind[o[2]]=(jb-1)*m; ind[o[2]] < jb*m; ind[o[2]]++)
+							c[ind[0]][ind[1]] = c[ind[0]][ind[1]] + a[ind[0]][ind[2]] * b[ind[2]][ind[1]];
 	return;
 }
 
-void mat_prod_4d(int ****a, int ****b, int ****c, int n_blocks, int block_size)
+void mat_prod_4d(int ****a, int ****b, int ****c, int n_blocks, int block_size, int o[3])
 {
 	int i, j, ib, jb, k;
-	int o[3] = { 0, 2, 1 };
+	//int o[3] = { 0, 2, 1 };
 	
 	
 	for (ib = 0; ib < n_blocks; ib++)
@@ -63,6 +60,16 @@ void mat_clean(int **c, int n)
 	for (int j = 0; j < n; j++)
 		c[i][j] = 0;
 }
+
+void mat_clean4d(int ****c, int block_size, int n_blocks)
+{
+	for (int ib=0; ib<n_blocks; ib++)
+		for (int jb=0; jb<n_blocks; jb++)
+			for (int i=0; i<block_size; i++)
+				for (int j=0; j<block_size; j++)
+					c[ib][jb][i][j] = 0;
+}
+
 void mat_print_2d(int **a, int n)
 {
 	for (int i = 0; i < n; i++)
@@ -142,33 +149,38 @@ int main()
 		}
 	}
 
-	/*
+	
 	for (order[0] = 0; order[0] < 3; order[0]++)
 		for (order[1] = 0; order[1] < 3; order[1]++)
+		{
 		    for (order[2] = 0; order[2] < 3; order[2]++)
 		    {
 				if (order[0] != order[1] && order[0] != order[2] && order[1] != order[2])
 				{
 					clock_t begin_time = clock();
 					mat_prod_ijk(a, b, c, n, order);
-					cout << order[0] << " " << order[1] << " " << order[2] << ": ";
+					cout << "2d simple:   " << order[0] << " " << order[1] << " " << order[2] << ": ";
 					cout << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
 					mat_clean(c, n);
+
+					begin_time = clock();
+					mat_prod_4d(a_bl, b_bl, c_bl, n_blocks, block_size, order);
+					cout << "4d block:    " << order[0] << " " << order[1] << " " << order[2] << ": ";
+					cout << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
+					mat_clean4d(c_bl, block_size, n_blocks);
+
+					begin_time = clock();
+					mat_prod_block_test_2(a,b,c,n,order,block_size);
+					cout << "2d block:   " << order[0] << " " << order[1] << " " << order[2] << ": ";
+					cout << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
+					mat_clean(c, n);
+					
 				}
 	        }
-			*/
-	//
-	clock_t begin_time = clock();
-	mat_prod_4d(a_bl, b_bl, c_bl, n_blocks, block_size);
-	cout << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
-	cout << "prod 4d" << endl;
-	//mat_print_4d(c_bl, n_blocks, block_size);
-
-	begin_time = clock();
-	mat_prod_ijk(a, b, c, n, order);
-	cout << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
-	cout << "prod 2d" << endl;
-
+			cout << endl;
+		}
+			
+	
 
 	
 
